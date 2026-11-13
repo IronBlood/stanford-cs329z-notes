@@ -440,9 +440,9 @@ class ScriptedLM:
         self.formatter = formatter
         self.repeat_last = repeat_last
         self.calls: list[list[Message]] = []
-        self.replies: list[str] = []
+        self.replies: list[object | str] = [] # NOTE: originally list[str]
 
-    def __call__(self, messages: Sequence[Message]) -> str:
+    def __call__(self, messages: Sequence[Message]) -> object | str:
         _validate_messages(messages)
         index = len(self.calls)
         self.calls.append(copy.deepcopy(list(messages)))
