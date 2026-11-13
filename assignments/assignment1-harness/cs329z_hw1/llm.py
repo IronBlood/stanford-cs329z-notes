@@ -40,11 +40,18 @@ import time
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
 from pathlib import Path
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Literal, NotRequired, Sequence, TypedDict
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 Message = dict  # {"role": "system" | "user" | "assistant", "content": str}
+class UsageDict(TypedDict):
+    input: int
+    cached: int
+    output: int
+    reasoning: int
+    finish_reason: Literal['stop', 'length', 'tool_calls', 'content_filter', 'function_call']
+    cost: NotRequired[float]
 
 # Model used for each role. Override any of these with the environment
 # variable CS329Z_<ROLE>_MODEL, e.g. CS329Z_GRADING_MODEL.
@@ -351,7 +358,7 @@ class LM:
                 "Raise the cap in .env if you mean to continue."
             )
 
-    def _complete(self, messages: list[Message]) -> tuple[str, dict]:
+    def _complete(self, messages: list[Message]) -> tuple[str, UsageDict]:
         if self._client is None:
             from openai import OpenAI
 
@@ -385,16 +392,16 @@ class LM:
         choice = response.choices[0]
         text = choice.message.content or ""
         u = response.usage
-        details = getattr(u, "prompt_tokens_details", None)
-        cached = getattr(details, "cached_tokens", 0) or 0
-        out_details = getattr(u, "completion_tokens_details", None)
-        reasoning = getattr(out_details, "reasoning_tokens", 0) or 0
-        usage = {
-            "input": u.prompt_tokens,
+        details = u.prompt_tokens_details if u is not None else None
+        cached = (details.cached_tokens or 0) if details is not None else 0
+        out_details = u.completion_tokens_details if u is not None else None
+        reasoning = (out_details.reasoning_tokens or 0) if out_details is not None else 0
+        usage: UsageDict = {
+            "input": u.prompt_tokens if u is not None else 0,
             "cached": cached,
-            "output": u.completion_tokens,
+            "output": u.completion_tokens if u is not None else 0,
             "reasoning": reasoning,
-            "finish_reason": getattr(choice, "finish_reason", None),
+            "finish_reason": choice.finish_reason,
         }
         cost = getattr(u, "cost", None)  # OpenRouter's figure for this call
         if isinstance(cost, (int, float)):
