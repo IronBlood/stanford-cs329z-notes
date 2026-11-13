@@ -225,24 +225,6 @@ def _validate_messages(messages: Sequence[Message]) -> None:
 
 class LM:
     """A chat model: messages in, string out.
-
-    Parameters
-    ----------
-    model:
-        A role ("grading", "user", "judge"), an OpenRouter model name such
-        as "openai/gpt-6-sol", or ``None`` for "grading".
-    temperature, max_tokens:
-        Sampling settings. They are part of the cache key. Reasoning models
-        spend part of ``max_tokens`` on hidden reasoning, so keep it large.
-        Models that reject ``temperature`` are called without it.
-    tag:
-        A free-form label written to the cost ledger so spending can be
-        grouped (the test suite sets it to the test name).
-    cache:
-        Set to False to bypass the disk cache for this instance.
-    salt:
-        Extra string mixed into the cache key. Two instances with different
-        salts get independent samples for identical messages.
     """
 
     def __init__(
@@ -255,6 +237,15 @@ class LM:
         cache: bool = True,
         salt: str = "",
     ) -> None:
+        """
+        Args:
+            model: A role ("grading", "user", "judge"), an OpenRouter model name such as "openai/gpt-6-sol", or ``None`` for "grading".
+            temperature: Sampling settings. Part of the cache key.
+            max_tokens: Sampling settings. Part of the cache key. Reasoning models spend part of `max_tokens` on hidden reasoning, so keep it large. Models that reject `temperature` are called without it.
+            tag: A free-form label written to the cost ledger so spending can be grouped (the test suite sets it to the test name).
+            cache: Set to False to bypass the disk cache for this instance.
+            salt: Extra string mixed into the cache key. Two instances with different salts get independent samples for identical messages.
+        """
         _load_env()
         self.model = resolve_model(model)
         _price(self.model)  # fail now, not after a paid call, if the price is unknown
