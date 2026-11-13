@@ -37,6 +37,8 @@ import json
 import os
 import threading
 import time
+from openai import OpenAI
+from openai.types.chat import ChatCompletion
 from pathlib import Path
 from typing import Any, Callable, Sequence
 
@@ -378,20 +380,8 @@ class LM:
         effort = os.environ.get("CS329Z_REASONING_EFFORT", DEFAULT_REASONING_EFFORT)
         if effort and self.model not in _NO_EFFORT:
             kwargs["extra_body"]["reasoning"] = {"effort": effort}
-        try:
-            response = self._client.chat.completions.create(**kwargs)
-        except Exception as exc:  # some models reject temperature or reasoning effort
-            text = str(exc)
-            if "temperature" in text and "temperature" in kwargs:
-                _NO_TEMPERATURE.add(self.model)
-                kwargs.pop("temperature")
-                response = self._client.chat.completions.create(**kwargs)
-            elif "reasoning" in text and "reasoning" in kwargs["extra_body"]:
-                _NO_EFFORT.add(self.model)
-                kwargs["extra_body"].pop("reasoning")
-                response = self._client.chat.completions.create(**kwargs)
-            else:
-                raise
+
+        response = _completion_request(self._client, self.model, kwargs)
         choice = response.choices[0]
         text = choice.message.content or ""
         u = response.usage
@@ -519,6 +509,24 @@ def spending_report(rows: list[dict] | None = None) -> str:
     lines.append(f"Total: {len(rows)} calls, ${total:.3f}" + (f"; {cut} cut off at max_tokens" if cut else ""))
     return "\n".join(lines)
 
+def _completion_request(client: OpenAI, model: str, kwargs: dict) -> ChatCompletion:
+    """ Refactor to handle the exceptions recursively if a model
+        rejects both temperature _AND_ reasoning effort
+    """
+    try:
+        return client.chat.completions.create(**kwargs)
+    except Exception as exc:
+        text = str(exc)
+        if "temperature" in text and "temperature" in kwargs:
+            _NO_TEMPERATURE.add(model)
+            kwargs.pop("temperature")
+            return _completion_request(client, model, kwargs)
+        elif "reasoning" in text and "reasoning" in kwargs["extra_body"]:
+            _NO_EFFORT.add(model)
+            kwargs["extra_body"].pop("reasoning")
+            return _completion_request(client, model, kwargs)
+        else:
+            raise
 
 if __name__ == "__main__":  # uv run python -m cs329z_hw1.llm
     print(spending_report())
