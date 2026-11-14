@@ -80,14 +80,62 @@ from pathlib import Path
 from cs329z_hw1 import data, sandbox_windows
 
 ALLOWED_PROGRAMS = (
-    "python3", "python", "cat", "head", "tail", "grep", "wc", "sort", "uniq", "cut",
-    "sed", "awk", "tr", "ls", "find", "jq", "diff", "comm", "paste", "join", "nl",
-    "tee", "xargs", "basename", "dirname", "date", "seq", "mkdir",
+    "python3",
+    "python",
+    "cat",
+    "head",
+    "tail",
+    "grep",
+    "wc",
+    "sort",
+    "uniq",
+    "cut",
+    "sed",
+    "awk",
+    "tr",
+    "ls",
+    "find",
+    "jq",
+    "diff",
+    "comm",
+    "paste",
+    "join",
+    "nl",
+    "tee",
+    "xargs",
+    "basename",
+    "dirname",
+    "date",
+    "seq",
+    "mkdir",
 )  # fmt: skip
-SHELL_BUILTINS = ("cd", "echo", "printf", "pwd", "read", "test", "[", "true", "false")
+SHELL_BUILTINS = (
+    "cd",
+    "echo",
+    "printf",
+    "pwd",
+    "read",
+    "test",
+    "[",
+    "true",
+    "false",
+)
 MAX_OUTPUT_BYTES = 4_000_000  # per stream
 
-_KEYWORDS = {"if", "then", "elif", "else", "fi", "while", "until", "do", "done", "!", "{", "}"}
+_KEYWORDS = {
+    "if",
+    "then",
+    "elif",
+    "else",
+    "fi",
+    "while",
+    "until",
+    "do",
+    "done",
+    "!",
+    "{",
+    "}",
+}
 _WINDOWS = sys.platform == "win32"
 if _WINDOWS:  # the programs and the shell come from Git for Windows; None if it is not installed
     _SYSTEM_PATH = str(sandbox_windows.git_usr_bin() or "")
