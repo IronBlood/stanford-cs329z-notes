@@ -35,7 +35,7 @@ import pytest
 from cs329z_hw1 import data
 from cs329z_hw1.tokenizer import tokenize
 from cs329z_hw1.tokens import count_tokens
-from cs329z_hw1.types import AgentConfig, CardinalDoc
+from cs329z_hw1.types import AgentConfig, CardinalDoc, DocWindow, SearchResult
 from cs329z_hw1 import adapters
 from tests.conftest import eval_slice
 from tests.helpers import contains_any, events, load_fixture
@@ -70,7 +70,7 @@ def doc_index():
     return _index_cache["index"]
 
 
-def search(query: str, k: int = 5) -> list[dict]:
+def search(query: str, k: int = 5) -> list[SearchResult]:
     results = adapters.run_search_docs(doc_index(), query, k)
     assert isinstance(results, list), (
         f"run_search_docs({query!r}, {k}) must return a list, got {type(results).__name__}"
@@ -188,7 +188,7 @@ def test_search_is_stable():
 # ------------------------------------------------------------- read_doc ---
 
 
-def read(doc_id: str, start_line: int = 1) -> dict:
+def read(doc_id: str, start_line: int = 1) -> DocWindow:
     window = adapters.run_read_doc(doc_index(), doc_id, start_line)
     assert isinstance(window, dict) and {"doc_id", "start_line", "end_line", "total_lines", "text"} <= set(window), (
         f"run_read_doc must return a dict with the keys doc_id, start_line, end_line, "
@@ -197,7 +197,7 @@ def read(doc_id: str, start_line: int = 1) -> dict:
     return window
 
 
-def check_window(window: dict, doc: CardinalDoc, start_line: int) -> None:
+def check_window(window: DocWindow, doc: CardinalDoc, start_line: int) -> None:
     lines = doc.text.splitlines()
     doc_id = doc.doc_id
     assert window["doc_id"] == doc_id, f"asked for {doc_id}, the window says doc_id {window['doc_id']!r}"
