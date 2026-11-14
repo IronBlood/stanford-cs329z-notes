@@ -30,9 +30,9 @@ def _read_emails(path: Path) -> tuple[list[Email], dict[str, list[Email]]]:
     with open(path, encoding="utf-8") as f:
         for line in f:
             if line.strip():
-                email = json.loads(line)
+                email = Email.from_dict(json.loads(line))
                 emails.append(email)
-                by_date.setdefault(email["date"][:10], []).append(email)
+                by_date.setdefault(email.date[:10], []).append(email)
     return emails, by_date
 
 
@@ -57,7 +57,7 @@ def emails_on(date: str) -> list[Email]:
 
 def email_text(email: Email) -> str:
     """The text of an email that BM25 indexes: subject, newline, body."""
-    return email["subject"] + "\n" + email["body"]
+    return email.subject + "\n" + email.body
 
 
 def load_docs() -> list[dict]:
