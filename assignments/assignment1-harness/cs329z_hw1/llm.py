@@ -475,7 +475,8 @@ class ScriptedLM:
 
 
 def spending_report(rows: list[dict] | None = None) -> str:
-    rows = read_ledger() if rows is None else rows
+    if rows is None:
+        rows = read_ledger()
     if not rows:
         return "No LLM calls recorded yet."
     by_model: dict[str, dict] = {}
