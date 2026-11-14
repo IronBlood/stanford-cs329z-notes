@@ -53,6 +53,15 @@ class UsageDict(TypedDict):
     finish_reason: Literal['stop', 'length', 'tool_calls', 'content_filter', 'function_call']
     cost: NotRequired[float]
 
+SpendingDict = TypedDict("SpendingDict", {
+    "calls": int,
+    "cut": int,
+    "in": int,
+    "out": int,
+    "usd": float,
+    "sec": float,
+})
+
 # Model used for each role. Override any of these with the environment
 # variable CS329Z_<ROLE>_MODEL, e.g. CS329Z_GRADING_MODEL.
 DEFAULT_MODELS = {
@@ -479,10 +488,10 @@ def spending_report(rows: list[dict] | None = None) -> str:
         rows = read_ledger()
     if not rows:
         return "No LLM calls recorded yet."
-    by_model: dict[str, dict] = {}
-    by_tag: dict[str, dict] = {}
+    by_model: dict[str, SpendingDict] = {}
+    by_tag: dict[str, SpendingDict] = {}
     for row in rows:
-        model = row.get("model", "?")
+        model: str = row.get("model", "?")
         short = model.split("-20")[0]  # drop the snapshot date
         tag_key = f"{row.get('tag') or '(untagged)'} [{short}]"
         for table, key in ((by_model, model), (by_tag, tag_key)):
