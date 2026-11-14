@@ -44,7 +44,9 @@ from typing import Any, Callable, Literal, NotRequired, Sequence, TypedDict
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-Message = dict  # {"role": "system" | "user" | "assistant", "content": str}
+class Message(TypedDict):
+    role: Literal["system", "user", "assistant"]
+    content: str
 class UsageDict(TypedDict):
     input: int
     cached: int
