@@ -34,10 +34,6 @@ class UserIO:
 class ScriptedUser(UserIO):
     """A user that follows a script. Used by the deterministic tests.
 
-    approvals: one entry per approve() call, each True, False, or an Approval.
-    answers:   one entry per ask() call.
-    steering:  {n: message} delivers ``message`` on the n-th pending_message()
-               call (0-based).
     Every interaction is recorded in ``.log``.
     """
 
@@ -47,6 +43,12 @@ class ScriptedUser(UserIO):
         answers: Sequence[str] = (),
         steering: Optional[dict[int, str]] = None,
     ) -> None:
+        """
+        Args:
+            approvals: one entry per approve() call, each True, False, or an Approval.
+            answers:   one entry per ask() call.
+            steering:  {n: message} delivers ``message`` on the n-th pending_message() call (0-based).
+        """
         self._approvals = list(approvals)
         self._answers = list(answers)
         self._steering = dict(steering or {})
