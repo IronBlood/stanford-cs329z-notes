@@ -323,8 +323,13 @@ def jail() -> str:
     if _WINDOWS:
         return "none"
     argv = _jail_argv(_state_dir())
+    assert _SHELL is not None # safe for non-Windows
     try:
-        if argv and subprocess.run([*argv, _SHELL, "-c", "true"], capture_output=True, timeout=10).returncode == 0:
+        if argv and subprocess.run(
+            [*argv, _SHELL, "-c", "true"],
+            capture_output=True,
+            timeout=10
+        ).returncode == 0:
             return Path(argv[0]).name
     except (OSError, subprocess.SubprocessError):
         pass
