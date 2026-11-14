@@ -24,3 +24,7 @@ addopts = "-m 'not live' -q"
 markers = [
     "live: makes real LLM calls (run with `uv run pytest -m live`)",
 ]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
