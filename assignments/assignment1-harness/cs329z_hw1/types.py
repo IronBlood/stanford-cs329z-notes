@@ -25,16 +25,21 @@ Message = dict  # {"role": "system" | "user" | "assistant", "content": str}
 LMCallable = Callable[[list[Message]], str]
 
 
-class Email(TypedDict):
+_EmailFrom = TypedDict("_EmailFrom", {"from": str})
+"""Base holding the `"from"` key: sender address of the email."""
+class Email(_EmailFrom):
     """One email from data/emails/emails.jsonl, as a plain dict:
     email["subject"], email["from"], email["to"]."""
 
-    id: str  # "em-00001"
-    thread_id: str  # "th-00001"
-    reply_to: Optional[str]  # id of the email this one replies to, or None
-    # "from" is also a key (it is a Python keyword, so it cannot be declared here).
+    id: str
+    """\"em-00001\""""
+    thread_id: str
+    """\"th-00001\""""
+    reply_to: Optional[str]
+    """id of the email this one replies to, or None"""
     to: list[str]
-    date: str  # ISO 8601, UTC, e.g. "2001-05-14T23:39:00Z"
+    date: str
+    """ISO 8601, UTC, e.g. "2001-05-14T23:39:00Z\""""
     subject: str
     body: str
 
