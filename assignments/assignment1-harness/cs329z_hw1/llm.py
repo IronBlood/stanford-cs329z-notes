@@ -175,6 +175,9 @@ def cost_usd(model: str, input_tokens: int, cached_tokens: int, output_tokens: i
 
 
 def _cache_dir() -> Path:
+    """ Returns the path to the cache dir.
+        By default, it uses `REPO_ROOT` / ".lm_cache".
+    """
     return Path(os.environ.get("CS329Z_CACHE_DIR", REPO_ROOT / ".lm_cache"))
 
 
@@ -194,6 +197,8 @@ _NO_EFFORT: set[str] = set()
 
 
 def read_ledger() -> list[dict]:
+    """ Deserialize from ladger.jsonl if exists
+    """
     path = _cache_dir() / "ledger.jsonl"
     if not path.exists():
         return []
@@ -341,6 +346,9 @@ class LM:
     # -- internals --------------------------------------------------------
 
     def _key(self, messages: list[Message]) -> str:
+        """ This function combines `messages` together with settings
+            to a string, SHA256 hashed from a JSON object (keys sorted).
+        """
         effort = os.environ.get("CS329Z_REASONING_EFFORT", DEFAULT_REASONING_EFFORT)
         blob = json.dumps(
             [self.model, self.temperature, self.max_tokens, effort, self.salt, messages],
@@ -350,6 +358,9 @@ class LM:
         return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
     def _check_budget(self) -> None:
+        """ If cap setting exists and spent exceeds cap
+            then raise BudgetExceeded exception
+        """
         cap = os.environ.get("CS329Z_BUDGET_USD")
         if not cap:
             return
@@ -384,8 +395,10 @@ class LM:
             # that the response carry the cost of the call.
             "extra_body": {"usage": {"include": True}},
         }
+
         if self.model not in _NO_TEMPERATURE:
             kwargs["temperature"] = self.temperature
+
         effort = os.environ.get("CS329Z_REASONING_EFFORT", DEFAULT_REASONING_EFFORT)
         if effort and self.model not in _NO_EFFORT:
             kwargs["extra_body"]["reasoning"] = {"effort": effort}
@@ -492,6 +505,8 @@ class ScriptedLM:
 
 
 def spending_report(rows: list[dict] | None = None) -> str:
+    """ Generate spending report, listed in two tables ("By model" and "By tag and model"), plus total and cut.
+    """
     if rows is None:
         rows = read_ledger()
     if not rows:
