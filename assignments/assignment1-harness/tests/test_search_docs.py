@@ -35,7 +35,7 @@ import pytest
 from cs329z_hw1 import data
 from cs329z_hw1.tokenizer import tokenize
 from cs329z_hw1.tokens import count_tokens
-from cs329z_hw1.types import AgentConfig
+from cs329z_hw1.types import AgentConfig, CardinalDoc
 from cs329z_hw1 import adapters
 from tests.conftest import eval_slice
 from tests.helpers import contains_any, events, load_fixture
@@ -56,8 +56,8 @@ QUERIES = [
 ]
 
 
-def docs_by_id() -> dict[str, dict]:
-    return {d["doc_id"]: d for d in data.load_docs()}
+def docs_by_id() -> dict[str, CardinalDoc]:
+    return {d.doc_id: d for d in data.load_docs()}
 
 
 _index_cache: dict = {}
@@ -89,8 +89,8 @@ def single_document_terms(limit: int = 6) -> list[tuple[str, str]]:
     """(term, doc_id) pairs where the term occurs in exactly one document."""
     homes: dict[str, set[str]] = {}
     for doc in data.load_docs():
-        for term in set(tokenize(doc["text"])):
-            homes.setdefault(term, set()).add(doc["doc_id"])
+        for term in set(tokenize(doc.text)):
+            homes.setdefault(term, set()).add(doc.doc_id)
     pairs = sorted(
         (term, next(iter(ids)))
         for term, ids in homes.items()
@@ -113,13 +113,14 @@ def test_search_results_have_the_right_shape_and_point_to_real_documents(query):
         assert isinstance(r, dict) and {"doc_id", "title", "snippet"} <= set(r), (
             f"each result must be a dict with the keys doc_id, title, snippet; got {r!r}"
         )
-        assert r["doc_id"] in docs, (
+        _d = docs[r["doc_id"]]
+        assert _d is not None, (
             f"result doc_id {r['doc_id']!r} is not a document in data/docs/ "
             f"(doc_id is the file name without .md)"
         )
-        assert r["title"] == docs[r["doc_id"]]["title"], (
+        assert r["title"] == _d.title, (
             f"result title {r['title']!r} is not the title of {r['doc_id']} "
-            f"({docs[r['doc_id']]['title']!r})"
+            f"({_d.title!r})"
         )
         assert isinstance(r["snippet"], str) and r["snippet"].strip(), (
             f"the snippet for {r['doc_id']} must be a non-empty str, got {r['snippet']!r}"
@@ -139,7 +140,7 @@ def test_snippets_are_short_and_come_from_the_document(query):
             f"the snippet for {r['doc_id']} is {size} tokens; the limit is {SNIPPET_MAX_TOKENS}. "
             "A search result must be a pointer with a short excerpt, not the document."
         )
-        assert shares_run(r["snippet"], docs[r["doc_id"]]["text"], SNIPPET_SHARED_RUN), (
+        assert shares_run(r["snippet"], docs[r["doc_id"]].text, SNIPPET_SHARED_RUN), (
             f"the snippet for {r['doc_id']} does not quote its document: no "
             f"{SNIPPET_SHARED_RUN} consecutive words of it occur in the document.\n"
             f"snippet: {r['snippet']!r}"
@@ -196,9 +197,9 @@ def read(doc_id: str, start_line: int = 1) -> dict:
     return window
 
 
-def check_window(window: dict, doc: dict, start_line: int) -> None:
-    lines = doc["text"].splitlines()
-    doc_id = doc["doc_id"]
+def check_window(window: dict, doc: CardinalDoc, start_line: int) -> None:
+    lines = doc.text.splitlines()
+    doc_id = doc.doc_id
     assert window["doc_id"] == doc_id, f"asked for {doc_id}, the window says doc_id {window['doc_id']!r}"
     assert window["total_lines"] == len(lines), (
         f"{doc_id}: total_lines is {window['total_lines']}, the file has {len(lines)} lines "
@@ -227,7 +228,7 @@ def check_window(window: dict, doc: dict, start_line: int) -> None:
 def test_read_doc_first_window():
     adapters.run_read_doc(doc_index(), "employee-handbook", 1)  # stub check before anything else
     for doc in data.load_docs():
-        check_window(read(doc["doc_id"], 1), doc, 1)
+        check_window(read(doc.doc_id, 1), doc, 1)
 
 
 def test_read_doc_default_start_line_is_1():
@@ -238,7 +239,7 @@ def test_read_doc_default_start_line_is_1():
 
 def test_read_doc_from_the_middle():
     doc = docs_by_id()["employee-handbook"]
-    total = len(doc["text"].splitlines())
+    total = len(doc.text.splitlines())
     for start in (2, 57, total // 2, total):
         check_window(read("employee-handbook", start), doc, start)
 
@@ -257,17 +258,17 @@ def test_consecutive_windows_cover_the_document_without_gaps():
     valid, and the last one ends at total_lines."""
     adapters.run_read_doc(doc_index(), "employee-handbook", 1)  # stub check before anything else
     for doc in data.load_docs():
-        total = len(doc["text"].splitlines())
+        total = len(doc.text.splitlines())
         start, collected, windows = 1, [], 0
         while start <= total:
-            window = read(doc["doc_id"], start)
+            window = read(doc.doc_id, start)
             check_window(window, doc, start)
-            collected += doc["text"].splitlines()[start - 1 : window["end_line"]]
+            collected += doc.text.splitlines()[start - 1 : window["end_line"]]
             start = window["end_line"] + 1
             windows += 1
-            assert windows <= total, f"{doc['doc_id']}: reading did not advance"
-        assert collected == doc["text"].splitlines(), (
-            f"{doc['doc_id']}: the windows read in sequence do not add up to the document"
+            assert windows <= total, f"{doc.doc_id}: reading did not advance"
+        assert collected == doc.text.splitlines(), (
+            f"{doc.doc_id}: the windows read in sequence do not add up to the document"
         )
 
 
@@ -278,7 +279,7 @@ def test_start_line_outside_the_document_raises(start_line):
 
 
 def test_start_line_one_past_the_end_raises():
-    total = len(docs_by_id()["pto-policy"]["text"].splitlines())
+    total = len(docs_by_id()["pto-policy"].text.splitlines())
     adapters.run_read_doc(doc_index(), "pto-policy", total)  # the last line is valid
     with pytest.raises((ValueError, LookupError)):
         adapters.run_read_doc(doc_index(), "pto-policy", total + 1)

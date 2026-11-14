@@ -179,3 +179,12 @@ class DocWindow(TypedDict):
     """1-based line number of the last line in `text`"""
     total_lines: int
     text: str
+
+@dataclass
+class CardinalDoc:
+    doc_id: str
+    """the file name without ``.md``"""
+    title: str
+    """the text of the first line that starts with "# ", or the ``doc_id`` if there is no such line"""
+    text: str
+    """the whole file. Line numbers in this assignment are 1-based positions in ``text.splitlines()``"""

@@ -12,7 +12,7 @@ import functools
 import json
 from pathlib import Path
 
-from cs329z_hw1.types import Email
+from cs329z_hw1.types import CardinalDoc, Email
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 EMAILS_PATH = REPO_ROOT / "data" / "emails" / "emails.jsonl"
@@ -60,7 +60,7 @@ def email_text(email: Email) -> str:
     return email.subject + "\n" + email.body
 
 
-def load_docs() -> list[dict]:
+def load_docs() -> list[CardinalDoc]:
     """The Cardinal Energy documents, sorted by ``doc_id``.
 
     Each document is a dict with three keys. ``doc_id`` is the file name
@@ -69,12 +69,16 @@ def load_docs() -> list[dict]:
     file. Line numbers in this assignment are 1-based positions in
     ``text.splitlines()``.
     """
-    docs = []
+    docs: list[CardinalDoc] = []
     for path in sorted(DOCS_DIR.glob("*.md"), key=lambda p: p.stem):
         text = path.read_text(encoding="utf-8")
         title = next(
             (line[2:].strip() for line in text.splitlines() if line.startswith("# ")),
             path.stem,
         )
-        docs.append({"doc_id": path.stem, "title": title, "text": text})
+        docs.append(CardinalDoc(
+            doc_id=path.stem,
+            title=title,
+            text=text
+        ))
     return docs

@@ -31,6 +31,7 @@ from typing import Any, Callable, Optional
 
 from cs329z_hw1.types import (
     AgentConfig,
+    CardinalDoc,
     DocWindow,
     Email,
     LMCallable,
@@ -341,7 +342,7 @@ def run_agent_session(
     raise NotImplementedError
 
 
-def run_build_doc_index(docs: list[dict]) -> Any:
+def run_build_doc_index(docs: list[CardinalDoc]) -> Any:
     """Problem (search_docs). Index the company documents.
 
     ``docs`` is what ``cs329z_hw1.data.load_docs()`` returns: one dict per
