@@ -477,7 +477,13 @@ class ScriptedLM:
             raise RuntimeError("ScriptedLM needs a formatter to render scripted tool calls")
         from cs329z_hw1.types import ToolCall
 
-        return self.formatter(text, ToolCall(name=call["name"], args=dict(call.get("args", {}))))
+        return self.formatter(
+            text,
+            ToolCall(
+                name=call["name"],
+                args=dict(call.get("args", {}))
+            )
+        )
 
     def usage(self) -> dict:
         return {"model": "scripted", "calls": len(self.calls), "cost_usd": 0.0}
