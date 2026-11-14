@@ -256,8 +256,10 @@ def _jail_argv(workspace: Path) -> list[str]:
         )
         return ["/usr/bin/sandbox-exec", "-p", profile]
     if sys.platform == "linux" and shutil.which("bwrap"):
+        bwrap_path = shutil.which("bwrap")
+        assert bwrap_path is not None, "Please install bubblewrap"
         return [
-            shutil.which("bwrap"), "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc",
+            bwrap_path, "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc",
             "--tmpfs", home, "--tmpfs", repo, "--ro-bind", py, py, "--ro-bind", bin_dir, bin_dir,
             "--ro-bind-try", emails, emails, "--bind", ws, ws,
             "--unshare-net", "--unshare-pid", "--die-with-parent",
