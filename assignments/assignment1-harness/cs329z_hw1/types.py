@@ -128,25 +128,31 @@ class AgentConfig:
     every field that the problems you have implemented so far define."""
 
     # Problem (agent_loop)
-    max_turns: int = 20  # model calls allowed per user message
-    token_budget: int = 400_000  # tokens allowed per user message
+    max_turns: int = 20
+    """model calls allowed per user message"""
+    token_budget: int = 400_000
+    """tokens allowed per user message"""
     # Problem (compaction)
-    context_budget: int = 16_000  # max tokens in any one LM call's messages
+    context_budget: int = 16_000
+    """max tokens in any one LM call's messages"""
     # Problem (memory)
-    memory_dir: Optional[Path] = None  # where persistent memory lives
+    memory_dir: Optional[Path] = None
+    """where persistent memory lives"""
     # Problem (interactive)
     mode: Literal["confirm", "auto"] = "auto"
-    user: Any = None  # a cs329z_hw1.user.UserIO, or None for no human
+    user: Any = None
+    """a cs329z_hw1.user.UserIO, or None for no human"""
     # Problem (guardrails)
-    deny_rules: tuple[str, ...] = ()  # regexes over the run_terminal command
-    # A second model for calls that are not the agent's own turns
-    # (summaries for compaction, the LLM calls inside your Part 1 tools).
-    # None means "use the agent's model".
+    deny_rules: tuple[str, ...] = ()
+    """regexes over the run_terminal command"""
     aux_lm: Any = None
-    # Terminal workspace directory; None means the sandbox default.
+    """A second model for calls that are not the agent's own turns
+    (summaries for compaction, the LLM calls inside your Part 1 tools).
+    None means "use the agent's model"."""
     workspace: Optional[Path] = None
-    # Seconds a run_terminal command may run; pass it to sandbox.run_terminal.
+    """Terminal workspace directory; None means the sandbox default."""
     terminal_timeout: float = 10.0
+    """Seconds a run_terminal command may run; pass it to sandbox.run_terminal."""
 
 
 # ------------------------------------------------------------- retrieval ---
