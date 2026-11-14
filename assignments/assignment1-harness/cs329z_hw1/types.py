@@ -166,7 +166,9 @@ class SearchResult(TypedDict):
 
 class DocWindow(TypedDict):
     doc_id: str
-    start_line: int  # 1-based line number of the first line in `text`
-    end_line: int  # 1-based line number of the last line in `text`
+    start_line: int
+    """1-based line number of the first line in `text`"""
+    end_line: int
+    """1-based line number of the last line in `text`"""
     total_lines: int
     text: str
