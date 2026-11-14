@@ -88,9 +88,11 @@ StopReason = Literal["done", "max_turns", "token_budget", "malformed"]
 
 @dataclass
 class AgentResult:
-    text: str  # what the user is shown
+    text: str
+    """what the user is shown"""
     status: StopReason
-    transcript: list[dict]  # a copy of the whole session transcript so far (see below)
+    transcript: list[dict]
+    """a copy of the whole session transcript so far (see below)"""
 
 
 # The transcript is an append-only list of event dicts. It is a log, not the
