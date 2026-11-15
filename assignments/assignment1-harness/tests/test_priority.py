@@ -8,6 +8,7 @@ import pytest
 
 from cs329z_hw1.llm import ScriptedLM
 from cs329z_hw1 import adapters
+from cs329z_hw1.types import Email
 from tests.conftest import eval_slice
 from tests.helpers import load_fixture
 from tests.thresholds import PRIORITY_MIN_ACCURACY
@@ -93,6 +94,7 @@ def test_contract_holds_for_any_reply(name, email):
 def test_email_is_not_modified():
     email = dict(EMAILS[0], to=list(EMAILS[0]["to"]))
     before = dict(email, to=list(email["to"]))
+    email = Email.from_dict(email)
     adapters.run_priority(email, ScriptedLM(["normal"], repeat_last=True))
     assert email == before, "run_priority should not change the email dict it is given."
 

@@ -41,12 +41,10 @@ from openai import OpenAI
 from openai.types.chat import ChatCompletion
 from pathlib import Path
 from typing import Any, Callable, Literal, NotRequired, Sequence, TypedDict
+from .types import Message
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-class Message(TypedDict):
-    role: Literal["system", "user", "assistant"]
-    content: str
 class UsageDict(TypedDict):
     input: int
     cached: int

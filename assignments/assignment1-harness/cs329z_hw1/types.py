@@ -17,7 +17,9 @@ from pathlib import Path
 from typing import Any, Callable, Literal, Optional, TypedDict
 
 
-Message = dict  # {"role": "system" | "user" | "assistant", "content": str}
+class Message(TypedDict):
+    role: Literal["system", "user", "assistant"]
+    content: str
 
 # Every model the tests hand you has this shape: a list of messages in, the
 # reply text out. ``cs329z_hw1.llm.LM`` and ``ScriptedLM`` are both one of
