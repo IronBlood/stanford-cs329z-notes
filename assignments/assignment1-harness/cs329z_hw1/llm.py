@@ -422,6 +422,16 @@ class LM:
         return text, usage
 
 
+class ScriptToolCall(TypedDict):
+    name: str
+    args: NotRequired[dict[str, Any]]
+
+class ScriptReply(TypedDict):
+    text: NotRequired[str]
+    tool_call: NotRequired[ScriptToolCall | None]
+
+ScriptEntry = str | ScriptReply | Callable[[list[Message]], str]
+
 class ScriptedLM:
     """A fake LM that replays a fixed script. Used by the deterministic tests.
 
@@ -444,7 +454,7 @@ class ScriptedLM:
 
     def __init__(
         self,
-        script: Sequence[Any],
+        script: Sequence[ScriptEntry],
         *,
         formatter: Callable[[str, Any], str] | None = None,
         repeat_last: bool = False,
@@ -453,9 +463,9 @@ class ScriptedLM:
         self.formatter = formatter
         self.repeat_last = repeat_last
         self.calls: list[list[Message]] = []
-        self.replies: list[object | str] = [] # NOTE: originally list[str]
+        self.replies: list[str] = []
 
-    def __call__(self, messages: Sequence[Message]) -> object | str:
+    def __call__(self, messages: Sequence[Message]) -> str:
         _validate_messages(messages)
         index = len(self.calls)
         self.calls.append(copy.deepcopy(list(messages)))
@@ -481,7 +491,7 @@ class ScriptedLM:
     def remaining(self) -> int:
         return max(len(self.script) - len(self.calls), 0)
 
-    def _render(self, entry: dict) -> str:
+    def _render(self, entry: ScriptReply) -> str:
         text = entry.get("text", "")
         call = entry.get("tool_call")
         if call is None:
