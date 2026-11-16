@@ -27,6 +27,8 @@ import sys
 import time
 from pathlib import Path
 
+from .types import Email
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from cs329z_hw1 import data  # noqa: E402
@@ -50,10 +52,10 @@ def label(category: str) -> str:
     return paint(category, *LABEL_STYLE.get(category, ("yellow",)))
 
 
-def _email_header(email: dict) -> str:
+def _email_header(email: Email) -> str:
     return (
-        f"{paint(email['id'], 'cyan')}  {paint(email['date'][:16], 'dim')}  from {email.get('from', '')}\n"
-        f"  {paint('subject:', 'dim')} {paint(email.get('subject') or '(no subject)', 'bold')}"
+        f"{paint(email.id, 'cyan')}  {paint(email.date[:16], 'dim')}  from {email.from_ or ''}\n"
+        f"  {paint('subject:', 'dim')} {paint(email.subject or '(no subject)', 'bold')}"
     )
 
 
@@ -66,7 +68,7 @@ def _finish(lm: LM, started: float) -> None:
 def show_priority(args) -> None:
     from cs329z_hw1 import adapters
 
-    by_id = {e["id"]: e for e in data.load_emails()}
+    by_id = {e.id: e for e in data.load_emails()}
     lm = LM(tag="show/priority")
     started = time.time()
     for email_id in args.ids:
@@ -76,7 +78,7 @@ def show_priority(args) -> None:
             continue
         result = adapters.run_priority(email, lm)
         print(_email_header(email))
-        body = " ".join(email["body"].split())
+        body = " ".join(email.body.split())
         print(f"  {paint('body:', 'dim')} {body[:300]}{'...' if len(body) > 300 else ''}")
         print(f"  -> {label(result['category'])}: {result['reason']}\n")
     _finish(lm, started)
