@@ -379,7 +379,7 @@ class LM:
                     "OPENROUTER_API_KEY is not set. Copy .env.example to .env and add your key."
                 )
             self._client = OpenAI(
-                base_url=OPENROUTER_URL,
+                base_url=os.environ.get("CS329Z_LM_BASE_URL", OPENROUTER_URL),
                 api_key=key,
                 max_retries=6,
                 timeout=120,
