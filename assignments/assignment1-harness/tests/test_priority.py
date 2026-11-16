@@ -95,6 +95,7 @@ def test_email_is_not_modified():
     email = dict(EMAILS[0], to=list(EMAILS[0]["to"]))
     before = dict(email, to=list(email["to"]))
     email = Email.from_dict(email)
+    before = Email.from_dict(before)
     adapters.run_priority(email, ScriptedLM(["normal"], repeat_last=True))
     assert email == before, "run_priority should not change the email dict it is given."
 
