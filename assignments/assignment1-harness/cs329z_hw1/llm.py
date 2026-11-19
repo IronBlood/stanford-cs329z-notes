@@ -40,7 +40,7 @@ import time
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
 from pathlib import Path
-from typing import Any, Callable, Literal, NotRequired, Sequence, TypedDict
+from typing import Any, Callable, Literal, NotRequired, Optional, Sequence, TypedDict
 from .types import Message
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -282,10 +282,15 @@ class LM:
 
     # -- public API -------------------------------------------------------
 
-    def __call__(self, messages: Sequence[Message]) -> str:
+    def __call__(self, messages: Sequence[Message], reasoning_prefill: Optional[str] = None) -> str:
         _validate_messages(messages)
         messages = [{"role": m["role"], "content": m["content"]} for m in messages]
+        # NOTE: add reasoning_prefill to key
+        if reasoning_prefill is not None:
+            messages.append({ "role": "assistant", "content": reasoning_prefill })
         key = self._key(messages)
+        if reasoning_prefill is not None:
+            messages.pop()
         path = _cache_dir() / key[:2] / f"{key}.json"
         self.calls += 1
         if self.cache and path.exists():
@@ -294,7 +299,7 @@ class LM:
 
         self._check_budget()
         start = time.time()
-        text, usage = self._complete(messages)
+        text, usage = self._complete(messages, reasoning_prefill)
         elapsed = time.time() - start
         cost = usage.get("cost")
         if cost is None:
@@ -372,7 +377,7 @@ class LM:
                 "Raise the cap in .env if you mean to continue."
             )
 
-    def _complete(self, messages: list[Message]) -> tuple[str, UsageDict]:
+    def _complete(self, messages: list[Message], reasoning_prefill: Optional[str] = None) -> tuple[str, UsageDict]:
         if self._client is None:
             from openai import OpenAI
 
@@ -396,6 +401,21 @@ class LM:
             # that the response carry the cost of the call.
             "extra_body": {"usage": {"include": True}},
         }
+
+        if reasoning_prefill is not None:
+            kwargs["messages"] = [
+                *messages,
+                {
+                    "role": "assistant",
+                    "content": "",
+                    "reasoning_content": reasoning_prefill,
+                }
+            ]
+            # llama.cpp backend extension
+            kwargs["extra_body"].update(
+                continue_final_message="reasoning_content",
+                add_generation_prompt=False,
+            )
 
         if self.model not in _NO_TEMPERATURE:
             kwargs["temperature"] = self.temperature

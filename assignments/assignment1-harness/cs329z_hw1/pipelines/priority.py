@@ -1,3 +1,5 @@
+import os
+from cs329z_hw1.llm import LM
 from cs329z_hw1.types import Email, LMCallable, Message
 
 PRIORITY_PROMPT = """
@@ -68,5 +70,8 @@ def classify_priority(email: Email, lm: LMCallable) -> dict:
         {"role": "user", "content": email_content},
     ]
 
-    reply = lm(messages)
+    if isinstance(lm, LM) and os.environ.get("CS329Z_PRIORITY_PREFILL") == "1":
+        reply = lm(messages, "The task, rubric, and output format are established. I will directly evaluate the recipient's required action and deadline.\nRecipient action:")
+    else:
+        reply = lm(messages)
     return _parse_reply(reply)
