@@ -67,7 +67,7 @@ def archive():
     return data.load_emails()
 
 
-def eval_slice(items: list) -> list:
+def eval_slice[T](items: list[T]) -> list[T]:
     """Apply CS329Z_EVAL_SLICE=N (keep the first N items) if it is set."""
     n = os.environ.get("CS329Z_EVAL_SLICE")
     return items[: int(n)] if n else items
