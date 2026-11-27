@@ -3,19 +3,22 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from typing import cast, TypedDict
 
 import pytest
 
+from copy import deepcopy
 from cs329z_hw1.llm import ScriptedLM
 from cs329z_hw1 import adapters
+from cs329z_hw1.types import Email
 from tests.conftest import eval_slice
 from tests.helpers import contains, contains_any, load_fixture
 
 MAX_WORDS = 300  # the live tests check the length of what the model wrote
 
 
-def make_email(n: int, subject: str, body: str, thread: int | None = None, reply_to=None) -> dict:
-    return {
+def make_email(n: int, subject: str, body: str, thread: int | None = None, reply_to=None) -> Email:
+    return Email.from_dict({
         "id": f"em-9{n:04d}",
         "thread_id": f"th-9{(thread or n):04d}",
         "reply_to": reply_to,
@@ -24,7 +27,7 @@ def make_email(n: int, subject: str, body: str, thread: int | None = None, reply
         "date": f"2001-05-14T{8 + n:02d}:00:00Z",
         "subject": subject,
         "body": body,
-    }
+    })
 
 
 DAY = [
@@ -37,6 +40,7 @@ DAY = [
 ]
 
 LONG_REPLY = " ".join(f"word{i}" for i in range(500))
+"""A generated string \"word0 word1 ... word499\""""
 
 REPLIES = {
     "500_words": LONG_REPLY,
@@ -48,6 +52,7 @@ REPLIES = {
 
 
 def check_digest(digest, context: str) -> None:
+    """Only checks if `digest` is string"""
     assert isinstance(digest, str), (
         f"run_daily_digest should return a string, got {type(digest).__name__}. {context}"
     )
@@ -78,30 +83,43 @@ def test_blank_subjects_and_bodies():
 
 
 def test_emails_are_not_modified():
-    day = [dict(email, to=list(email["to"])) for email in DAY]
-    before = [dict(email, to=list(email["to"])) for email in day]
+    day = deepcopy(DAY)
+    before = deepcopy(day)
     adapters.run_daily_digest(day, ScriptedLM(["normal"], repeat_last=True))
     assert day == before, "run_daily_digest should not change the emails it is given."
 
 
 # ------------------------------------------------------------------ live ---
 
-_digests: dict = {}
+_digests: list[tuple[DigestDay, str]] | None = None
 
+class UrgentItem(TypedDict):
+    id: str
+    must_mention: list[list[str]]
+class IgnoreItem(TypedDict):
+    id: str
+    must_not_mention: list[str]
+class DigestDay(TypedDict):
+    date: str
+    email_ids: list[str]
+    urgent: list[UrgentItem]
+    ignore: list[IgnoreItem]
 
-def live_digests(archive, lm) -> list[tuple[dict, str]]:
+def live_digests(archive: list[Email], lm) -> list[tuple[DigestDay, str]]:
     """(gold day, your digest) for each day in tests/fixtures/digest_days.json.
     Computed once and shared by the three live tests."""
-    if "days" not in _digests:
-        days = eval_slice(load_fixture("digest_days.json"))
-        by_id = {email["id"]: email for email in archive}
+    global _digests
+    if _digests is None:
+        days = eval_slice(cast(list[DigestDay], load_fixture("digest_days.json")))
+        by_id = {email.id: email for email in archive}
 
-        def run(day):
+        def run(day: DigestDay):
             return adapters.run_daily_digest([by_id[i] for i in day["email_ids"]], lm)
 
         with ThreadPoolExecutor(max_workers=5) as pool:
-            _digests["days"] = list(zip(days, pool.map(run, days)))
-    return _digests["days"]
+            _digests = list(zip(days, pool.map(run, days)))
+    assert _digests is not None
+    return _digests
 
 
 def report(what: str, problems: list[str], n: int) -> None:
@@ -112,7 +130,7 @@ def report(what: str, problems: list[str], n: int) -> None:
 
 
 @pytest.mark.live
-def test_live_length(archive, live_lm):
+def test_live_length(archive: list[Email], live_lm):
     """Each digest is non-empty and at most MAX_WORDS words, as the model
     wrote it."""
     days = live_digests(archive, live_lm)
@@ -128,7 +146,7 @@ def test_live_length(archive, live_lm):
 
 
 @pytest.mark.live
-def test_live_mentions_every_urgent_item(archive, live_lm):
+def test_live_mentions_every_urgent_item(archive: list[Email], live_lm):
     """Each gold urgent email lists groups of aliases. The digest must
     contain at least one alias from every group."""
     days = live_digests(archive, live_lm)
@@ -145,7 +163,7 @@ def test_live_mentions_every_urgent_item(archive, live_lm):
 
 
 @pytest.mark.live
-def test_live_mentions_nothing_from_ignore_pile(archive, live_lm):
+def test_live_mentions_nothing_from_ignore_pile(archive: list[Email], live_lm):
     days = live_digests(archive, live_lm)
     problems = []
     for day, digest in days:

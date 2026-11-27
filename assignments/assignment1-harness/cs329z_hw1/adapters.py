@@ -42,6 +42,7 @@ from cs329z_hw1.types import (
 )
 from .pipelines import (
     classify_priority,
+    gen_daily_digest,
 )
 
 # ======================================================================
@@ -85,7 +86,11 @@ def run_daily_digest(emails: list[Email], lm: LMCallable) -> str:
       site that email is about; it contains no term listed for the gold
       ignore emails.
     """
-    raise NotImplementedError
+    emails = [
+        Email.from_dict(e) if isinstance(e, dict) else e
+        for e in emails
+    ]
+    return gen_daily_digest(emails=emails, lm=lm)
 
 
 def run_bm25_build(docs: list[str]) -> Any:
