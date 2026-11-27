@@ -1,6 +1,7 @@
 import os
 from cs329z_hw1.llm import LM
 from cs329z_hw1.types import Email, LMCallable, Message
+from typing import cast, Literal, TypedDict
 
 PRIORITY_PROMPT = """
 Classify the email's priority from the recipient's perspective, at the time the email was sent.
@@ -49,8 +50,11 @@ Return exactly one line: "category|reason". The category must be urgent, normal,
 DO NOT add headings, markdown, or surrounding commentary.
 """.strip()
 
+class PriorityDict(TypedDict):
+    category: Literal["urgent", "normal", "ignore", "unknown"]
+    reason: str
 
-def _parse_reply(reply: str) -> dict[str, str]:
+def _parse_reply(reply: str) -> PriorityDict:
     """Parse a reply that follows the requested two-line format."""
     reply = reply.rsplit("</think>", 1)[-1].strip()
     category, _, reason = reply.strip().partition("|")
@@ -61,13 +65,13 @@ def _parse_reply(reply: str) -> dict[str, str]:
 
     if not reason:
         reason = reply.strip() or "The model returned no usable explanation."
-    return {
+    return cast(PriorityDict, {
         "category": category,
         "reason": reason,
-    }
+    })
 
 
-def classify_priority(email: Email, lm: LMCallable) -> dict:
+def classify_priority(email: Email, lm: LMCallable) -> PriorityDict:
     email_content = (
         f"Date: {email.date}\n"
         f"From: {email.from_}\n"
