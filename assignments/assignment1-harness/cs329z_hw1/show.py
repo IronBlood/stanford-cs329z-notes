@@ -26,8 +26,9 @@ import os
 import sys
 import time
 from pathlib import Path
+from typing import TypedDict
 
-from .types import Email
+from .types import BM25ParsedDocs, Email
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -104,23 +105,26 @@ def show_digest(args) -> None:
         for email in emails:
             result = adapters.run_priority(email, lm)
             print(f"  {label(result['category']):<{8 + (len(label(result['category'])) - len(result['category']))}} "
-                  f"{paint(email['id'], 'cyan')}  {email.get('subject') or '(no subject)'}")
+                  f"{paint(email.id, 'cyan')}  {email.subject or '(no subject)'}")
     _finish(lm, started)
 
+class ArchiveIndex(TypedDict):
+    archive: list[Email]
+    index: BM25ParsedDocs
 
-_archive_index: dict = {}
+_archive_index: ArchiveIndex | None = None
 
-
-def archive_index():
+def archive_index() -> tuple[list[Email], BM25ParsedDocs]:
     """Your BM25 index over the archive, built once per process (a few seconds)."""
-    if "index" not in _archive_index:
+    global _archive_index
+    if _archive_index is None:
         from cs329z_hw1 import adapters
 
         archive = data.load_emails()
         started = time.time()
         index = adapters.run_bm25_build([data.email_text(e) for e in archive])
         print(paint(f"[index built over {len(archive)} emails in {time.time() - started:.1f} s]", "dim"), flush=True)
-        _archive_index.update(archive=archive, index=index)
+        _archive_index = ArchiveIndex(archive=archive, index=index)
     return _archive_index["archive"], _archive_index["index"]
 
 
@@ -134,7 +138,7 @@ def show_bm25(args) -> None:
     print(paint(f"bm25({args.query!r}, k={args.k}) -> {len(hits)} results in {elapsed:.1f} ms\n", "bold"))
     for doc_id, score in hits:
         email = archive[doc_id]
-        words = email["body"].split()
+        words = email.body.split()
         body = " ".join(words[:100]) + (" ..." if len(words) > 100 else "")
         print(f"{paint(f'{score:8.3f}', 'yellow', 'bold')}  {_email_header(email)}\n  {body}\n")
 
@@ -145,19 +149,19 @@ def show_email_qa(args) -> None:
     archive, index = archive_index()
     lm = LM(tag="show/email_qa")
     started = time.time()
-    returned: dict[str, dict] = {}
+    returned: dict[str, Email] = {}
     hops = 0
 
-    def search(query: str, k: int = 5) -> list[dict]:
+    def search(query: str, k: int = 5) -> list[Email]:
         nonlocal hops
         hops += 1
         hits = [archive[doc_id] for doc_id, _ in adapters.run_bm25_search(index, query, k)]
         print(f"{paint(f'search {hops}:', 'bold')} {paint(query, 'yellow')}  {paint(f'(k={k}, {len(hits)} results)', 'dim')}")
         for e in hits[:5]:
-            print(f"    {paint(e['id'], 'cyan')}  {e.get('subject') or '(no subject)'}")
+            print(f"    {paint(e.id, 'cyan')}  {e.subject or '(no subject)'}")
         if len(hits) > 5:
             print(paint(f"    ... and {len(hits) - 5} more", "dim"))
-        returned.update((e["id"], e) for e in hits)
+        returned.update((e.id, e) for e in hits)
         return hits
 
     print(f"{paint('Question:', 'bold')} {args.question}\n")
