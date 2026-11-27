@@ -31,6 +31,7 @@ from typing import Any, Callable, Optional
 
 from cs329z_hw1.types import (
     AgentConfig,
+    BM25ParsedDocs,
     CardinalDoc,
     DocWindow,
     Email,
@@ -41,6 +42,8 @@ from cs329z_hw1.types import (
     ToolSpec,
 )
 from .pipelines import (
+    bm25_build,
+    bm25_search,
     classify_priority,
     gen_daily_digest,
 )
@@ -93,7 +96,7 @@ def run_daily_digest(emails: list[Email], lm: LMCallable) -> str:
     return gen_daily_digest(emails=emails, lm=lm)
 
 
-def run_bm25_build(docs: list[str]) -> Any:
+def run_bm25_build(docs: list[str]) -> BM25ParsedDocs:
     """Problem (bm25).
 
     Build and return a BM25 index over ``docs``. Document ids are list
@@ -103,10 +106,10 @@ def run_bm25_build(docs: list[str]) -> Any:
     back to ``run_bm25_search``. The index over the archive must build in
     under 15 seconds.
     """
-    raise NotImplementedError
+    return bm25_build(docs)
 
 
-def run_bm25_search(index: Any, query: str, k: int) -> list[tuple[int, float]]:
+def run_bm25_search(index: BM25ParsedDocs, query: str, k: int) -> list[tuple[int, float]]:
     """Problem (bm25).
 
     Return the top-k ``(doc_id, score)`` pairs for ``query`` as
@@ -124,7 +127,7 @@ def run_bm25_search(index: Any, query: str, k: int) -> list[tuple[int, float]]:
       query on average over the archive, and 2 ms for a term that occurs in
       3 of 200,000 documents.
     """
-    raise NotImplementedError
+    return bm25_search(index, query, k)
 
 
 def run_email_qa(

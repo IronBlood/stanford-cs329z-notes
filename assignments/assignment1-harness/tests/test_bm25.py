@@ -221,7 +221,7 @@ def test_archive_recall_at_10(archive):
     queries = load_fixture("bm25_queries.json")
     recalls, misses = [], []
     for item in queries:
-        top = [archive[doc_id]["id"] for doc_id, _ in adapters.run_bm25_search(index, item["query"], 10)]
+        top = [archive[doc_id].id for doc_id, _ in adapters.run_bm25_search(index, item["query"], 10)]
         found = [email_id for email_id in item["relevant"] if email_id in top]
         recalls.append(len(found) / len(item["relevant"]))
         if len(found) < len(item["relevant"]):

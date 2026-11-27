@@ -190,3 +190,37 @@ class CardinalDoc:
     """the text of the first line that starts with "# ", or the ``doc_id`` if there is no such line"""
     text: str
     """the whole file. Line numbers in this assignment are 1-based positions in ``text.splitlines()``"""
+
+class TokenRegistry:
+    def __init__(self):
+        self.__len: int = 0
+        self.map: dict[str, int] = {}
+
+    def set(self, token: str) -> tuple[int, bool]:
+        if token not in self.map:
+            id = self.map[token] = self.__len
+            self.__len += 1
+            return id, True
+        else:
+            return self.map[token], False
+
+    def get(self, token: str) -> int | None:
+        return self.map.get(token)
+
+    def len(self) -> int:
+        return self.__len
+
+class BM25ParsedDocs:
+    def __init__(
+        self,
+        token_registry: TokenRegistry,
+        avgdl: float,
+        lens: list[int],
+        length_factors: list[float],
+        postings: dict[int, list[tuple[int, int]]],
+    ):
+        self.token_registry = token_registry
+        self.avgdl = avgdl
+        self.lens = lens
+        self.length_factors = length_factors
+        self.postings = postings
